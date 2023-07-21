@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import sklearn
-from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from fastapi import FastAPI
@@ -9,20 +8,22 @@ from pydantic import BaseModel
 
 
 # TRAINING DATA
-df = pd.read_csv("./stress.csv")
-X = df.iloc[:, :-1].values
-y = df.iloc[:, -1].values
+db = pd.read_csv("./stress.csv")
+x = db.iloc[:, :4] # Features
+y = db.iloc[:, 4] # Target variable
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.25, random_state=0)
+    x, y, test_size=0.2, random_state=1)
 
-sc = StandardScaler()
-X_train = sc.fit_transform(X_train)
-X_test = sc.transform(X_test)
+# Create Decision Tree classifer object
+clf = DecisionTreeClassifier(random_state=1)
 
-classifier = DecisionTreeClassifier(criterion='entropy', random_state=0)
-classifier.fit(X_train, y_train)
+# Train Decision Tree Classifer
+clf = clf.fit(X_train,y_train)
 
-# print(classifier.predict(sc.transform([[34.08, 91.344, 4.016, 63.36]])))
+#Predict the response for test dataset
+y_pred = clf.predict(X_test)
+
+# print(clf.predict([[36,99,6,75]]))
 
 
 # FAST API
@@ -52,6 +53,6 @@ async def root(item: StressForm):
     # [[itemDict["temperature"], itemDict["spo2"], itemDict["sleepTime"], itemDict["heartRate"]]]))
     # print(type(itemDict["temperature"]), itemDict["spo2"],
     #       itemDict["sleepTime"], itemDict["heartRate"])
-    stressLevel = (classifier.predict(sc.transform(
-        [[temperature, spo2, sleepTime, heartRate]])))
+    stressLevel = (clf.predict(
+        [[temperature, spo2, sleepTime, heartRate]]))
     return {"stressLevel": str(stressLevel[0])}
